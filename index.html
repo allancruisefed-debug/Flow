@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#10131b">
+  <title>Pocket Agent</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✳</span><div><strong>Pocket Agent</strong><small>AI workspace</small></div></div>
+      <div class="top-actions">
+        <span id="runtime-status" class="status-pill">Model not loaded</span>
+        <button id="load-model" class="button primary">Load model</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar">
+        <div class="section-heading"><span>WORKSPACE</span><button id="new-project" class="icon-button" title="Reset project">＋</button></div>
+        <div class="project-name">▣ <span>My project</span></div>
+        <div class="section-heading files-heading"><span>FILES</span><button id="new-file" class="icon-button" title="New file">＋</button></div>
+        <div id="file-list" class="file-list"></div>
+        <div class="sidebar-bottom">
+          <button id="export-project" class="button secondary full">↓ Export project ZIP</button>
+          <p>Files are saved in this browser on this device.</p>
+        </div>
+      </aside>
+
+      <section class="main-column">
+        <nav class="tabs" aria-label="Workspace panels">
+          <button class="tab active" data-panel="chat">Chat</button>
+          <button class="tab" data-panel="editor">Editor</button>
+          <button class="tab" data-panel="preview">Preview</button>
+          <button class="tab" data-panel="console">Console</button>
+        </nav>
+
+        <section id="panel-chat" class="panel active chat-panel">
+          <div id="chat-log" class="chat-log">
+            <div class="welcome">
+              <div class="welcome-icon">✳</div>
+              <h1>What are we building?</h1>
+              <p>Ask me to create files, write code, or run JavaScript and Python in the workspace sandbox.</p>
+              <div class="starter-prompts">
+                <button class="starter" data-prompt="Create a simple responsive landing page for a coffee shop. Create the HTML, CSS and JavaScript files.">Create a landing page <span>↗</span></button>
+                <button class="starter" data-prompt="Write a JavaScript function that sorts a list of names alphabetically, then run a quick test.">Write and test JavaScript <span>↗</span></button>
+                <button class="starter" data-prompt="Create a Python script that calculates compound interest and run it with example values.">Try a Python script <span>↗</span></button>
+              </div>
+            </div>
+          </div>
+          <div class="composer-wrap">
+            <div id="working-indicator" class="working" hidden>Agent is working…</div>
+            <form id="chat-form" class="composer">
+              <textarea id="message-input" rows="2" placeholder="Tell the agent what to build…" autocomplete="off"></textarea>
+              <div class="composer-footer">
+                <span>Enter to send · Shift+Enter for a new line</span>
+                <button id="send-message" class="button primary" type="submit">Send ↑</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section id="panel-editor" class="panel editor-panel">
+          <div class="panel-toolbar">
+            <div><strong id="active-file-name">index.html</strong><span class="muted"> · editable project file</span></div>
+            <div class="toolbar-actions"><button id="run-js" class="button secondary">Run JS</button><button id="run-python" class="button secondary">Run Python</button><button id="save-file" class="button primary">Save</button></div>
+          </div>
+          <textarea id="code-editor" spellcheck="false" aria-label="Code editor"></textarea>
+          <div class="editor-note">JavaScript and Python run in separate browser sandboxes. Do not paste passwords, API keys, or private data into code.</div>
+        </section>
+
+        <section id="panel-preview" class="panel preview-panel">
+          <div class="panel-toolbar"><div><strong>Live preview</strong><span class="muted"> · project HTML</span></div><button id="refresh-preview" class="button secondary">Refresh</button></div>
+          <iframe id="preview-frame" title="Project preview" sandbox="allow-scripts allow-forms"></iframe>
+        </section>
+
+        <section id="panel-console" class="panel console-panel">
+          <div class="panel-toolbar"><div><strong>Execution console</strong><span class="muted"> · sandbox output</span></div><button id="clear-console" class="button secondary">Clear</button></div>
+          <pre id="console-output">Ready. Run JavaScript or Python to see output here.</pre>
+        </section>
+      </section>
+    </main>
+    <footer class="footer"><span id="save-status">Local workspace ready</span><span>Prototype · browser-based execution</span></footer>
+  </div>
+
+  <dialog id="model-dialog">
+    <form method="dialog" class="dialog-card">
+      <div class="dialog-title"><div><span class="eyebrow">LOCAL MODEL</span><h2>Load an AI model</h2></div><button class="icon-button" value="cancel" aria-label="Close">×</button></div>
+      <p>This downloads a small instruction model from Hugging Face and runs it in your browser. The first download may take a while and uses device memory.</p>
+      <label for="model-id">Hugging Face model ID</label>
+      <input id="model-id" value="onnx-community/SmolLM2-360M-Instruct-ONNX" spellcheck="false">
+      <div class="model-hint">Start with the default small model. If it is too slow or unsupported on your phone, we can switch to a cloud inference endpoint later.</div>
+      <div id="model-progress" class="progress-text">Not loaded.</div>
+      <div class="dialog-actions"><button id="cancel-model" class="button secondary" value="cancel">Cancel</button><button id="confirm-load-model" class="button primary" type="button">Download & load</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="file-dialog">
+    <form method="dialog" class="dialog-card">
+      <div class="dialog-title"><h2>New file</h2><button class="icon-button" value="cancel">×</button></div>
+      <label for="new-file-name">File name</label><input id="new-file-name" placeholder="example.js">
+      <div class="dialog-actions"><button class="button secondary" value="cancel">Cancel</button><button id="create-file" class="button primary" type="button">Create file</button></div>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
